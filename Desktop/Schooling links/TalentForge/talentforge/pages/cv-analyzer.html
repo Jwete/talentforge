@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CV Analyzer — TalentForge</title>
+<link rel="icon" type="image/jpeg" href="../assets/logo.jpg"/>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.page-hero { padding:120px 48px 60px; background:linear-gradient(180deg,var(--panel) 0%,var(--darker) 100%); border-bottom:1px solid var(--border); text-align:center; }
+.page-hero h1 { font-size:clamp(2.5rem,6vw,5rem); color:#fff; margin-bottom:12px; }
+.page-hero p { font-size:1rem; font-weight:300; color:var(--steel); max-width:520px; margin:0 auto; }
+.analyzer-layout { max-width:1200px; margin:0 auto; padding:60px 48px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:start; }
+.analyzer-panel { background:var(--panel); border:1px solid var(--border); padding:36px; }
+.panel-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; color:#fff; margin-bottom:6px; }
+.panel-sub { font-size:.85rem; color:var(--muted); margin-bottom:24px; }
+.drop-zone { border:2px dashed var(--border); padding:48px 24px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; position:relative; margin-bottom:20px; }
+.drop-zone:hover,.drop-zone.drag-over { border-color:var(--border-hi); background:rgba(255,107,26,.04); }
+.drop-zone-icon { font-size:2.5rem; margin-bottom:12px; }
+.drop-zone p { font-size:.88rem; color:var(--steel); }
+.drop-zone strong { color:var(--ember); }
+.drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.file-selected { display:none; background:rgba(255,107,26,.08); border:1px solid var(--border-hi); padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; gap:12px; }
+.file-selected.show { display:flex; }
+.divider-or { display:flex; align-items:center; gap:12px; margin:20px 0; }
+.divider-or::before,.divider-or::after { content:''; flex:1; height:1px; background:var(--border); }
+.divider-or span { font-family:'Barlow Condensed',sans-serif; font-size:.7rem; letter-spacing:.2em; color:var(--muted); }
+.results-panel { display:none; }
+.results-panel.show { display:block; }
+.score-section { display:flex; align-items:center; gap:32px; margin-bottom:32px; flex-wrap:wrap; }
+.score-ring-wrap { text-align:center; }
+.skill-item { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.skill-name { font-size:.85rem; color:var(--text); flex:1; }
+.skill-pct { font-family:'Barlow Condensed',sans-serif; font-size:.82rem; color:var(--steel); width:36px; text-align:right; }
+.missing-tag { display:inline-block; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.2); color:#F87171; font-size:.7rem; font-family:'Barlow Condensed',sans-serif; letter-spacing:.12em; text-transform:uppercase; padding:3px 8px; margin:3px; }
+.suggestion-item { padding:14px 16px; background:rgba(255,255,255,.03); border-left:3px solid var(--fire); margin-bottom:8px; font-size:.87rem; color:var(--text); line-height:1.5; }
+.analyzing-overlay { display:none; position:absolute; inset:0; background:rgba(13,20,32,.92); align-items:center; justify-content:center; flex-direction:column; gap:16px; z-index:10; }
+.analyzing-overlay.show { display:flex; }
+.analyzing-spinner { width:48px; height:48px; border:3px solid rgba(255,107,26,.2); border-top-color:var(--fire); border-radius:50%; animation:spin 1s linear infinite; }
+.analyzing-text { font-family:'Barlow Condensed',sans-serif; font-size:.85rem; letter-spacing:.15em; text-transform:uppercase; color:var(--steel); }
+@media(max-width:900px){.analyzer-layout{grid-template-columns:1fr;padding:32px 20px;gap:24px;}}
+</style>
+</head>
+<body>
+<div class="page-loader"><div class="loader-logo">TALENT<span>FORGE</span></div></div>
+
+<nav class="nav">
+  <a href="../index.html" class="nav-logo"><img src="../assets/logo.jpg" alt="TalentForge"/></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="cv-analyzer.html" class="active">CV Analyzer</a></li>
+    <li><a href="cv-builder.html">CV Builder</a></li>
+    <li><a href="interview.html">Interview Coach</a></li>
+    <li><a href="jobs.html">Jobs</a></li>
+    <li><a href="pricing.html">Pricing</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn-ghost" id="nav-login-btn" onclick="openModal('modal-login')">Sign In</button>
+    <div id="nav-user-menu" style="display:none;align-items:center;gap:12px;">
+      <a href="dashboard.html" class="btn btn-primary btn-sm">Dashboard</a>
+    </div>
+    <a href="register.html" class="btn btn-primary btn-sm">Get Started</a>
+    <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <a href="../index.html">Home</a><a href="cv-analyzer.html">CV Analyzer</a>
+  <a href="cv-builder.html">CV Builder</a><a href="interview.html">Interview Coach</a>
+  <a href="jobs.html">Jobs</a><a href="pricing.html">Pricing</a>
+</div>
+
+<div class="page-hero">
+  <p class="section-label" style="justify-content:center;">AI-Powered</p>
+  <h1>CV <span style="color:var(--fire)">Analyzer</span></h1>
+  <p>Upload your CV and a job description. Get an instant match score, identify gaps, and receive tailored improvement suggestions.</p>
+</div>
+
+<div class="analyzer-layout">
+  <!-- INPUT PANEL -->
+  <div>
+    <div class="analyzer-panel" style="position:relative;">
+      <div class="analyzing-overlay" id="analyzing-overlay">
+        <div class="analyzing-spinner"></div>
+        <p class="analyzing-text" id="analyzing-text">Parsing CV…</p>
+      </div>
+      <h2 class="panel-title">Your CV</h2>
+      <p class="panel-sub">Upload a PDF/DOC or paste your CV text below.</p>
+
+      <div class="drop-zone" id="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <div class="drop-zone-icon">📄</div>
+        <p><strong>Click to upload</strong> or drag &amp; drop</p>
+        <p style="font-size:.78rem;margin-top:6px;color:var(--muted);">PDF, DOC, DOCX · Max 5MB</p>
+        <input type="file" accept=".pdf,.doc,.docx,.txt" onchange="handleFileSelect(event)"/>
+      </div>
+
+      <div class="file-selected" id="file-selected">
+        <span style="font-size:1.2rem;">📎</span>
+        <span id="file-name" style="font-size:.88rem;color:var(--text);flex:1;"></span>
+        <button onclick="clearFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">×</button>
+      </div>
+
+      <div class="divider-or"><span>OR PASTE TEXT</span></div>
+
+      <div class="form-group">
+        <textarea class="form-control" id="cv-text" rows="8" placeholder="Paste your CV content here…&#10;&#10;John Smith&#10;Software Engineer&#10;john@email.com | +27 XX XXX XXXX&#10;&#10;EXPERIENCE&#10;…"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:8px;">
+        <label class="form-label">Job Description</label>
+        <textarea class="form-control" id="job-desc" rows="6" placeholder="Paste the job description you're applying for…&#10;&#10;We're looking for a Software Engineer with experience in React, Node.js, and PostgreSQL…" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Job Role / Title (optional)</label>
+        <input type="text" class="form-control" id="job-title" placeholder="e.g. Frontend Developer, Marketing Manager"/>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="analyzeCV()" style="margin-top:4px;">Analyze My CV →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div>
+    <div class="analyzer-panel results-panel" id="results-panel">
+      <h2 class="panel-title">Analysis Results</h2>
+      <p class="panel-sub" id="results-sub">Here's how your CV performs against the job description.</p>
+
+      <!-- SCORE -->
+      <div class="score-section">
+        <div class="score-ring-wrap">
+          <div class="score-ring" id="score-ring" style="width:130px;height:130px;"></div>
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-top:32px;">Match Score</p>
+        </div>
+        <div style="flex:1;">
+          <div style="margin-bottom:16px;">
+            <p style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Verdict</p>
+            <p id="verdict-text" style="font-size:.95rem;color:var(--text);font-weight:300;line-height:1.5;"></p>
+          </div>
+          <div id="score-breakdown"></div>
+        </div>
+      </div>
+
+      <!-- SKILL MATCH -->
+      <div style="margin-bottom:28px;" id="skills-section">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--fire);margin-bottom:14px;">Skill Match</p>
+        <div id="skill-bars"></div>
+      </div>
+
+      <!-- MISSING SKILLS -->
+      <div style="margin-bottom:28px;" id="missing-section">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--fire);margin-bottom:12px;">Missing / Weak Skills</p>
+        <div id="missing-tags"></div>
+      </div>
+
+      <!-- SUGGESTIONS -->
+      <div id="suggestions-section">
+        <p style="font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--fire);margin-bottom:12px;">Improvement Suggestions</p>
+        <div id="suggestions-list"></div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;">
+        <a href="cv-builder.html" class="btn btn-primary btn-sm">Improve CV →</a>
+        <button class="btn btn-secondary btn-sm" onclick="downloadReport()">Download Report</button>
+        <button class="btn btn-secondary btn-sm" onclick="analyzeCV()">Re-Analyze</button>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="analyzer-panel" id="empty-state">
+      <div style="text-align:center;padding:48px 24px;">
+        <div style="font-size:3rem;margin-bottom:16px;">🎯</div>
+        <p style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#fff;margin-bottom:8px;">Your Results Appear Here</p>
+        <p style="font-size:.88rem;font-weight:300;color:var(--muted);line-height:1.6;">Upload your CV and paste a job description, then hit <strong style="color:var(--ember);">Analyze</strong> to see your match score and improvement tips.</p>
+        <div style="margin-top:28px;padding:20px;background:rgba(255,107,26,.06);border:1px solid rgba(255,107,26,.12);">
+          <p style="font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--fire);margin-bottom:8px;">Demo Mode</p>
+          <p style="font-size:.83rem;color:var(--steel);">No API key required. Click Analyze with any text to see a simulated analysis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-login')">×</button>
+    <h3 class="modal-title">Sign In</h3>
+    <p class="modal-sub">Access your TalentForge account</p>
+    <form onsubmit="handleLogin(event)">
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" required placeholder="your@email.com"/></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" required placeholder="••••••••"/></div>
+      <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      <p style="text-align:center;margin-top:14px;font-size:.84rem;color:var(--muted)">No account? <a href="register.html" style="color:var(--ember)">Register free</a></p>
+    </form>
+  </div>
+</div>
+
+<footer class="footer" style="margin-top:0;">
+  <div class="footer-bottom" style="max-width:1200px;margin:0 auto;padding:24px 0;">
+    <p>© 2025 TalentForge. All rights reserved.</p>
+    <span class="footer-tagline">Forge Your Future</span>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+let selectedFile = null;
+
+function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(e) { const file = e.target.files[0]; if (file) processFile(file); }
+function processFile(file) {
+  selectedFile = file;
+  document.getElementById('file-name').textContent = file.name + ' (' + (file.size/1024).toFixed(1) + 'KB)';
+  document.getElementById('file-selected').classList.add('show');
+  document.getElementById('drop-zone').style.display = 'none';
+  document.getElementById('cv-text').value = '[File: ' + file.name + '] — Content will be extracted on analysis.';
+}
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('file-selected').classList.remove('show');
+  document.getElementById('drop-zone').style.display = 'block';
+  document.getElementById('cv-text').value = '';
+}
+
+function analyzeCV() {
+  const cvText = document.getElementById('cv-text').value.trim();
+  const jobDesc = document.getElementById('job-desc').value.trim();
+  if (!cvText && !selectedFile) { showToast('Please upload or paste your CV text', 'error'); return; }
+  if (!jobDesc) { showToast('Please paste the job description', 'error'); return; }
+
+  const overlay = document.getElementById('analyzing-overlay');
+  overlay.classList.add('show');
+  const steps = ['Parsing CV…', 'Reading job description…', 'Matching skills…', 'Generating insights…'];
+  let i = 0;
+  const interval = setInterval(() => {
+    document.getElementById('analyzing-text').textContent = steps[i++] || steps[steps.length-1];
+    if (i >= steps.length) clearInterval(interval);
+  }, 600);
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    clearInterval(interval);
+    showResults(cvText, jobDesc);
+  }, 2800);
+}
+
+function showResults(cvText, jobDesc) {
+  // Simulate scoring based on text overlap
+  const cvWords = new Set(cvText.toLowerCase().split(/\W+/).filter(w => w.length > 3));
+  const jdWords = jobDesc.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  const matches = jdWords.filter(w => cvWords.has(w)).length;
+  const score = Math.min(95, Math.max(22, Math.round((matches / Math.max(jdWords.length, 1)) * 180)));
+
+  const skills = [
+    { name: 'Technical Skills', pct: Math.min(98, score + Math.round(Math.random()*15)) },
+    { name: 'Relevant Experience', pct: Math.min(98, score - 5 + Math.round(Math.random()*20)) },
+    { name: 'Keywords Match', pct: Math.min(98, score + Math.round(Math.random()*10)) },
+    { name: 'Formatting & Structure', pct: Math.min(98, 55 + Math.round(Math.random()*40)) },
+  ];
+  const missing = ['Portfolio link', 'GitHub profile', 'Certifications', 'Quantified achievements', 'Keywords from JD'];
+  const suggestions = [
+    'Add measurable achievements (e.g. "Increased sales by 30%") to strengthen your experience section.',
+    'Include keywords directly from the job description — recruiters use ATS scanners.',
+    'Add a professional summary at the top tailored to this specific role.',
+    'List your top technical skills prominently in a dedicated Skills section.',
+    'Quantify your impact wherever possible — numbers stand out to hiring managers.',
+  ];
+
+  drawScoreRing(document.getElementById('score-ring'), score);
+
+  const verdict = score >= 70 ? '🟢 Strong match! Your CV aligns well with this role.'
+    : score >= 45 ? '🟡 Moderate match. A few targeted improvements could significantly boost your chances.'
+    : '🔴 Low match. Consider tailoring your CV more specifically to this job description.';
+  document.getElementById('verdict-text').textContent = verdict;
+
+  // Skill bars
+  const barsHtml = skills.map(s => `
+    <div class="skill-item">
+      <span class="skill-name">${s.name}</span>
+      <div class="progress-track" style="width:160px;"><div class="progress-fill" style="width:${s.pct}%"></div></div>
+      <span class="skill-pct">${s.pct}%</span>
+    </div>`).join('');
+  document.getElementById('skill-bars').innerHTML = barsHtml;
+
+  // Missing tags
+  const missCount = score < 50 ? 5 : score < 70 ? 3 : 1;
+  document.getElementById('missing-tags').innerHTML = missing.slice(0, missCount).map(m => `<span class="missing-tag">${m}</span>`).join('');
+
+  // Suggestions
+  const suggCount = score < 50 ? 5 : score < 70 ? 3 : 2;
+  document.getElementById('suggestions-list').innerHTML = suggestions.slice(0, suggCount).map(s => `<div class="suggestion-item">${s}</div>`).join('');
+
+  document.getElementById('results-sub').textContent = `Role: ${document.getElementById('job-title').value || 'Analyzed Position'} · Score: ${score}/100`;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-panel').classList.add('show');
+  document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('Analysis complete!', 'success');
+}
+
+function downloadReport() {
+  const score = document.querySelector('.score-value')?.textContent || 'N/A';
+  const content = `TALENTFORGE CV ANALYSIS REPORT\n${'='.repeat(40)}\nGenerated: ${new Date().toLocaleDateString()}\nMatch Score: ${score}/100\n\nForge Your Future — talentforge.co.za\n`;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'talentforge-cv-analysis.txt';
+  a.click();
+  showToast('Report downloaded!', 'success');
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  TF.set('user', { name: 'Demo User', email: 'demo@talentforge.co.za', plan: 'pro' });
+  closeModal('modal-login');
+  showToast('Signed in!', 'success');
+  updateAuthUI();
+}
+</script>
+</body>
+</html>
